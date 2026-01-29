@@ -1,0 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* PG/Hostel Management System - Lavender Theme Design System */
+
+@layer base {
+  :root {
+    --background: 250 30% 98%;
+    --foreground: 240 10% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 15%;
+
+    --primary: 252 55% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 252 40% 95%;
+    --secondary-foreground: 252 55% 35%;
+
+    --muted: 252 25% 95%;
+    --muted-foreground: 240 5% 45%;
+
+    --accent: 252 60% 92%;
+    --accent-foreground: 252 55% 40%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 252 25% 90%;
+    --input: 252 25% 90%;
+    --ring: 252 55% 55%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 252 45% 22%;
+    --sidebar-foreground: 252 20% 90%;
+    --sidebar-primary: 252 55% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 252 40% 28%;
+    --sidebar-accent-foreground: 252 20% 95%;
+    --sidebar-border: 252 35% 30%;
+    --sidebar-ring: 252 55% 65%;
+
+    --rating-star: 45 93% 47%;
+
+    --gradient-sidebar: linear-gradient(180deg, hsl(252 45% 25%) 0%, hsl(252 50% 18%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(252 55% 55%) 0%, hsl(270 60% 50%) 100%);
+    --gradient-card-hover: linear-gradient(135deg, hsl(252 60% 97%) 0%, hsl(270 40% 95%) 100%);
+  }
+
+  .dark {
+    --background: 240 10% 8%;
+    --foreground: 0 0% 95%;
+
+    --card: 240 10% 12%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 240 10% 12%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 252 55% 60%;
+    --secondary: 252 30% 18%;
+    --muted: 252 20% 18%;
+    --accent: 252 40% 20%;
+
+    --border: 252 20% 20%;
+    --input: 252 20% 20%;
+    --ring: 252 55% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Inter', sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+@layer components {
+  .sidebar-gradient {
+    background: var(--gradient-sidebar);
+  }
+
+  .card-hover {
+    @apply transition-all duration-300;
+  }
+
+  .card-hover:hover {
+    @apply shadow-lg -translate-y-1;
+    background: var(--gradient-card-hover);
+  }
+
+  .badge-boys {
+    @apply bg-info/15 text-info border-info/30;
+  }
+
+  .badge-girls {
+    @apply bg-pink-100 text-pink-600 border-pink-300;
+  }
+
+  .badge-coliving {
+    @apply bg-primary/15 text-primary border-primary/30;
+  }
+
+  .badge-verified {
+    @apply bg-success/15 text-success;
+  }
+
+  .star-rating {
+    color: hsl(var(--rating-star));
+  }
+
+  .btn-gradient {
+    background: var(--gradient-primary);
+    @apply text-white shadow-md hover:shadow-lg transition-all duration-200;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all;
+  }
+
+  .nav-item.active {
+    @apply bg-sidebar-accent text-sidebar-primary-foreground font-medium;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
