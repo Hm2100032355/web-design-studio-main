@@ -1,25 +1,39 @@
+import { useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PGCard } from "@/components/pg/PGCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, FolderHeart, Bell, Plus, ArrowLeftRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Heart, FolderHeart, Bell, Plus, ArrowLeftRight, X } from "lucide-react";
 
-// Import images
 import pgRoom1 from "@/assets/pg-room-1.jpg";
 import pgRoom2 from "@/assets/pg-room-2.jpg";
 import pgRoom3 from "@/assets/pg-room-3.jpg";
 import pgCommonArea from "@/assets/pg-common-area.jpg";
 
+type FolderId = "1" | "2" | "3" | "4";
+
 const folders = [
-  { id: "1", name: "All", count: 13, icon: Heart },
-  { id: "2", name: "Near Office", count: 5, icon: FolderHeart },
-  { id: "3", name: "Budget PGs", count: 4, icon: FolderHeart },
-  { id: "4", name: "Food Included", count: 4, icon: FolderHeart },
+  { id: "1" as const, name: "All", icon: Heart },
+  { id: "2" as const, name: "Near Office", icon: FolderHeart },
+  { id: "3" as const, name: "Budget PGs", icon: FolderHeart },
+  { id: "4" as const, name: "Food Included", icon: FolderHeart },
 ];
 
-const savedPGs = [
+const initialSavedPGs = [
   {
     id: "1",
     name: "Green Valley PG",
@@ -34,6 +48,7 @@ const savedPGs = [
     isVerified: true,
     availability: "available" as const,
     isSaved: true,
+    tags: ["nearOffice", "food"],
   },
   {
     id: "2",
@@ -48,6 +63,7 @@ const savedPGs = [
     amenities: ["wifi", "food"],
     availability: "available" as const,
     isSaved: true,
+    tags: ["nearOffice", "budget", "food"],
   },
   {
     id: "3",
@@ -63,6 +79,7 @@ const savedPGs = [
     isVerified: true,
     availability: "limited" as const,
     isSaved: true,
+    tags: ["food"],
   },
   {
     id: "4",
@@ -79,14 +96,78 @@ const savedPGs = [
     isTrending: true,
     availability: "available" as const,
     isSaved: true,
+    tags: ["nearOffice", "food"],
   },
 ];
 
 export default function WishlistPage() {
+  const [activeFolder, setActiveFolder] = useState<FolderId>("1");
+  const [savedPGs, setSavedPGs] = useState(initialSavedPGs);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
+
+  const [searchText, setSearchText] = useState(""); // NEW: search state
+
+  const folderCounts = useMemo(() => {
+    return {
+      "1": savedPGs.length,
+      "2": savedPGs.filter((p) => p.tags?.includes("nearOffice")).length,
+      "3": savedPGs.filter((p) => p.tags?.includes("budget")).length,
+      "4": savedPGs.filter((p) => p.tags?.includes("food")).length,
+    } as Record<FolderId, number>;
+  }, [savedPGs]);
+
+  // Filter by folder AND search text
+  const filteredPGs = useMemo(() => {
+    let result = savedPGs;
+
+    if (activeFolder !== "1") {
+      const folderTag = activeFolder === "2" ? "nearOffice" : activeFolder === "3" ? "budget" : "food";
+      result = result.filter((p) => p.tags?.includes(folderTag));
+    }
+
+    if (searchText.trim() !== "") {
+      const lower = searchText.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(lower) || p.location.toLowerCase().includes(lower)
+      );
+    }
+
+    return result;
+  }, [savedPGs, activeFolder, searchText]);
+
+  const toggleCompare = (id: string) => {
+    setCompareIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= 4) return prev;
+      return [...prev, id];
+    });
+  };
+
+  const removeFromWishlist = (id: string) => {
+    setSavedPGs((prev) => prev.filter((p) => p.id !== id));
+    setCompareIds((prev) => prev.filter((x) => x !== id));
+  };
+
+  const comparePGs = useMemo(() => savedPGs.filter((pg) => compareIds.includes(pg.id)), [
+    savedPGs,
+    compareIds,
+  ]);
+
+  const openCompare = () => {
+    if (compareIds.length < 2) {
+      alert("Select at least 2 PGs to compare.");
+      return;
+    }
+    setCompareOpen(true);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
+        {/* Header + Search */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground">
@@ -96,35 +177,44 @@ export default function WishlistPage() {
               Organize and compare your favorite PGs. Get alerts when there's a vacancy or price change.
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline">
+          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+            <Input
+              placeholder="Search PGs by name or location..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="md:w-64"
+            />
+            <Button variant="outline" onClick={() => setAlertsOpen((v) => !v)}>
               <Bell className="w-4 h-4 mr-2" />
-              Manage Alerts
+              {alertsOpen ? "Hide Alerts" : "Manage Alerts"}
             </Button>
-            <Button className="btn-gradient">
+            <Button className="btn-gradient" onClick={openCompare}>
               <ArrowLeftRight className="w-4 h-4 mr-2" />
               Compare PGs
+              {compareIds.length > 0 && <Badge className="ml-2">{compareIds.length}</Badge>}
             </Button>
           </div>
         </div>
 
+        {/* Main Grid */}
         <div className="grid grid-cols-12 gap-6">
-          {/* Folders Sidebar */}
+          {/* Sidebar */}
           <div className="col-span-12 lg:col-span-3">
             <Card className="shadow-card">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Folders</CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
+              <CardHeader className="pb-3 flex items-center justify-between">
+                <CardTitle className="text-base">Folders</CardTitle>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Plus className="w-4 h-4" />
+                </Button>
               </CardHeader>
               <CardContent className="space-y-1">
                 {folders.map((folder) => (
                   <button
                     key={folder.id}
-                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-secondary transition-colors"
+                    onClick={() => setActiveFolder(folder.id)}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
+                      folder.id === activeFolder ? "bg-secondary" : "hover:bg-secondary"
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -132,77 +222,52 @@ export default function WishlistPage() {
                       </div>
                       <span className="text-sm font-medium">{folder.name}</span>
                     </div>
-                    <Badge variant="secondary">{folder.count}</Badge>
+                    <Badge variant={folder.id === activeFolder ? "default" : "secondary"}>
+                      {folderCounts[folder.id]}
+                    </Badge>
                   </button>
                 ))}
               </CardContent>
             </Card>
-
-            {/* Availability Alerts */}
-            <Card className="shadow-card mt-4">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Bell className="w-4 h-4" />
-                  Availability Alerts
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="p-3 rounded-lg bg-success/10 border border-success/20">
-                  <p className="text-sm font-medium text-success">Vacancy Alert</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Green Valley PG has 2 rooms available
-                  </p>
-                </div>
-                <div className="p-3 rounded-lg bg-info/10 border border-info/20">
-                  <p className="text-sm font-medium text-info">Price Drop</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Sunrise PG reduced rent by ₹500
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Saved PGs Grid */}
+          {/* PG Grid */}
           <div className="col-span-12 lg:col-span-9">
-            <div className="flex items-center gap-2 mb-4">
-              {folders.map((folder) => (
-                <Badge
-                  key={folder.id}
-                  variant={folder.id === "1" ? "default" : "secondary"}
-                  className="cursor-pointer"
-                >
-                  {folder.name} ({folder.count})
-                </Badge>
-              ))}
-            </div>
+            {filteredPGs.length === 0 ? (
+              <Card className="shadow-card">
+                <CardContent className="py-10 text-center">
+                  <p className="font-medium">No PGs found.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredPGs.map((pg) => (
+                  <div key={pg.id} className="relative">
+                    <button
+                      onClick={() => toggleCompare(pg.id)}
+                      className={`absolute top-3 left-3 px-2 py-1 text-xs rounded-md border ${
+                        compareIds.includes(pg.id)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background/90 border-border"
+                      }`}
+                      title="Select for compare"
+                    >
+                      {compareIds.includes(pg.id) ? "Selected" : "Compare"}
+                    </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {savedPGs.map((pg) => (
-                <PGCard key={pg.id} {...pg} />
-              ))}
-            </div>
+                    <button
+                      onClick={() => removeFromWishlist(pg.id)}
+                      className="absolute top-3 right-3 p-2 rounded-full bg-background/90 border border-border hover:bg-secondary"
+                      title="Remove from wishlist"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
 
-            {/* Compare Section */}
-            <Card className="shadow-card mt-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ArrowLeftRight className="w-5 h-5" />
-                  Compare Saved PGs
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Select up to 3-4 PGs to compare side-by-side on rent, distance, amenities, and more.
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="outline">Select PGs to Compare</Button>
-                  <Button variant="ghost">
-                    Best Match <Badge className="ml-2 bg-success">AI</Badge>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                    <PGCard {...pg} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
