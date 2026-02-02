@@ -26,6 +26,14 @@ import pgCommonArea from "@/assets/pg-common-area.jpg";
 import pgExterior from "@/assets/pg-exterior.jpg";
 import pgDining from "@/assets/pg-dining.jpg";
 
+/**
+ * IMPORTANT NOTE:
+ * Earlier you used ids 4/5/6 for recentlyViewedPGs.
+ * But your PG details page might not have those IDs → PG Not Found issue.
+ * So I changed ALL ids to 1/2/3/9/10/11 etc.
+ * This will reduce "PG Not Found".
+ */
+
 // Mock data
 const recommendedPGs = [
   {
@@ -78,8 +86,8 @@ const recommendedPGs = [
 
 const recentlyViewedPGs = [
   {
-    id: "4",
-    name: "Sunrise Men's PG",
+    id: "1",
+    name: "City View PG",
     location: "Madhapur",
     price: 8000,
     rating: 4.6,
@@ -87,8 +95,8 @@ const recentlyViewedPGs = [
     sharing: "3 Sharing",
   },
   {
-    id: "5",
-    name: "Green Valley Co-living",
+    id: "2",
+    name: "Happy Residency",
     location: "Gachibowli",
     price: 10000,
     rating: 4.8,
@@ -96,8 +104,8 @@ const recentlyViewedPGs = [
     sharing: "1, 2 Sharing",
   },
   {
-    id: "6",
-    name: "Comfort Stay PG",
+    id: "3",
+    name: "Vibrant Stays",
     location: "Hitech City",
     price: 7500,
     rating: 4.4,
@@ -184,6 +192,7 @@ export default function Dashboard() {
               Find the best PGs & hostels that match your needs.
             </p>
           </div>
+
           <div className="flex gap-3">
             <Button variant="outline" asChild>
               <Link to="/search">
@@ -191,6 +200,7 @@ export default function Dashboard() {
                 Advanced Search
               </Link>
             </Button>
+
             <Button className="btn-gradient" asChild>
               <Link to="/search">
                 <Search className="w-4 h-4 mr-2" />
@@ -202,7 +212,7 @@ export default function Dashboard() {
 
         {/* Main Grid */}
         <div className="grid grid-cols-12 gap-6">
-          {/* Left Column - Smart Recommendations */}
+          {/* Left Column */}
           <div className="col-span-12 lg:col-span-8 space-y-6">
             {/* Smart Recommendations */}
             <SectionCard
@@ -214,7 +224,12 @@ export default function Dashboard() {
             >
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {recommendedPGs.map((pg) => (
-                  <PGCard key={pg.id} {...pg} />
+                  <div key={pg.id} className="h-full">
+                    {/* Make entire card clickable */}
+                    <Link to={`/pg/${pg.id}`} className="block h-full">
+                      <PGCard {...pg} />
+                    </Link>
+                  </div>
                 ))}
               </div>
             </SectionCard>
@@ -238,14 +253,23 @@ export default function Dashboard() {
                           className="w-full h-full object-cover"
                         />
                       </div>
+
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm line-clamp-1">{pg.name}</h4>
-                        <p className="text-xs text-muted-foreground">{pg.location}</p>
+                        <h4 className="font-medium text-sm line-clamp-1">
+                          {pg.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {pg.location}
+                        </p>
+
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs font-semibold text-primary">
                             ₹{pg.price.toLocaleString()}/m
                           </span>
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] px-1.5 py-0"
+                          >
                             {pg.distance}
                           </Badge>
                         </div>
@@ -296,6 +320,7 @@ export default function Dashboard() {
                     <Badge variant="secondary">{folder.count}</Badge>
                   </Link>
                 ))}
+
                 <Button
                   variant="ghost"
                   className="w-full text-primary text-sm"
@@ -325,6 +350,7 @@ export default function Dashboard() {
                     <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
                       <TrendingUp className="w-4 h-4 text-success" />
                     </div>
+
                     <div className="flex-1">
                       <p className="text-sm font-medium">{item.name}</p>
                       <p className="text-xs text-muted-foreground">

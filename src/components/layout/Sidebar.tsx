@@ -89,7 +89,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border">
         <p className="text-xs text-sidebar-foreground/50 text-center">
-          © 2025 Hostel / PG Management
+          © 2026 Hostel / PG Management
         </p>
         <p className="text-xs text-sidebar-foreground/40 text-center mt-1">
           Secure • Reliable • Cloud-Based

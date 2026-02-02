@@ -1,3 +1,5 @@
+// ComplaintsPage.tsx
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +23,8 @@ import {
   Calendar,
 } from "lucide-react";
 
+import RaiseComplaint from "./RaiseComplaint"; // make sure path is correct
+
 const complaintCategories = [
   { id: "water", label: "Water", icon: Droplets, color: "text-blue-500" },
   { id: "electricity", label: "Electricity", icon: Zap, color: "text-yellow-500" },
@@ -29,7 +33,7 @@ const complaintCategories = [
   { id: "food", label: "Food", icon: UtensilsCrossed, color: "text-orange-500" },
 ];
 
-const activeComplaints = [
+const initialActiveComplaints = [
   {
     id: "1",
     category: "wifi",
@@ -63,9 +67,20 @@ const activeComplaints = [
     assignedTo: "Housekeeping",
     progress: 0,
   },
+  {
+    id: "6",
+    category: "electricity",
+    title: "Generator issue",
+    description: "Generator not starting",
+    status: "escalated",
+    priority: "high",
+    createdAt: "3 hours ago",
+    assignedTo: "Maintenance",
+    progress: 10,
+  },
 ];
 
-const resolvedComplaints = [
+const initialResolvedComplaints = [
   {
     id: "4",
     category: "electricity",
@@ -120,15 +135,30 @@ const getPriorityColor = (priority: string) => {
 
 const getCategoryIcon = (categoryId: string) => {
   const category = complaintCategories.find((c) => c.id === categoryId);
-  return category ? category.icon : MessageSquare;
+  return category?.icon ?? MessageSquare;
 };
 
 const getCategoryColor = (categoryId: string) => {
   const category = complaintCategories.find((c) => c.id === categoryId);
-  return category ? category.color : "text-muted-foreground";
+  return category?.color ?? "text-muted-foreground";
 };
 
 export default function ComplaintsPage() {
+  const [activeComplaints, setActiveComplaints] = useState(initialActiveComplaints);
+  const [resolvedComplaints] = useState(initialResolvedComplaints);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [tab, setTab] = useState("all");
+  const [showRaise, setShowRaise] = useState(false); // modal state
+
+  // Filter complaints by tab
+  const filteredComplaints =
+    tab === "all" ? activeComplaints : activeComplaints.filter((c) => c.status === tab);
+
+  const pendingCount = activeComplaints.filter((c) => c.status === "pending").length;
+  const inProgressCount = activeComplaints.filter((c) => c.status === "in_progress").length;
+  const resolvedCount = resolvedComplaints.length;
+  const escalatedCount = activeComplaints.filter((c) => c.status === "escalated").length;
+
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
@@ -147,7 +177,7 @@ export default function ComplaintsPage() {
               <History className="w-4 h-4 mr-2" />
               Complaint History
             </Button>
-            <Button className="btn-gradient">
+            <Button className="btn-gradient" onClick={() => setShowRaise(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Raise New Complaint
             </Button>
@@ -157,54 +187,49 @@ export default function ComplaintsPage() {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">3</p>
-                  <p className="text-xs text-muted-foreground">Pending</p>
-                </div>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-warning" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{pendingCount}</p>
+                <p className="text-xs text-muted-foreground">Pending</p>
               </div>
             </CardContent>
           </Card>
+
           <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center">
-                  <ArrowUpRight className="w-5 h-5 text-info" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">1</p>
-                  <p className="text-xs text-muted-foreground">In Progress</p>
-                </div>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center">
+                <ArrowUpRight className="w-5 h-5 text-info" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{inProgressCount}</p>
+                <p className="text-xs text-muted-foreground">In Progress</p>
               </div>
             </CardContent>
           </Card>
+
           <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">12</p>
-                  <p className="text-xs text-muted-foreground">Resolved</p>
-                </div>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-success" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{resolvedCount}</p>
+                <p className="text-xs text-muted-foreground">Resolved</p>
               </div>
             </CardContent>
           </Card>
+
           <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-destructive" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">0</p>
-                  <p className="text-xs text-muted-foreground">Escalated</p>
-                </div>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{escalatedCount}</p>
+                <p className="text-xs text-muted-foreground">Escalated</p>
               </div>
             </CardContent>
           </Card>
@@ -213,12 +238,11 @@ export default function ComplaintsPage() {
         <div className="grid grid-cols-12 gap-6">
           {/* Main Content */}
           <div className="col-span-12 lg:col-span-8 space-y-6">
-            {/* Raise Complaint Quick Form */}
+            {/* Quick Complaint */}
             <Card className="shadow-card">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Quick Complaint
+                  <Plus className="w-4 h-4" /> Quick Complaint
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -226,7 +250,8 @@ export default function ComplaintsPage() {
                   {complaintCategories.map((category) => (
                     <button
                       key={category.id}
-                      className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all"
+                      onClick={() => setShowRaise(true)}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border hover:border-primary hover:bg-primary/5 transition-all border-gray-200`}
                     >
                       <div className={`w-10 h-10 rounded-xl bg-secondary flex items-center justify-center`}>
                         <category.icon className={`w-5 h-5 ${category.color}`} />
@@ -235,52 +260,42 @@ export default function ComplaintsPage() {
                     </button>
                   ))}
                 </div>
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Photos/Videos
-                  </Button>
-                  <Button className="flex-1">Submit Complaint</Button>
-                </div>
               </CardContent>
             </Card>
 
             {/* Active Complaints */}
             <Card className="shadow-card">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Active Complaints</CardTitle>
-                  <Tabs defaultValue="all" className="w-auto">
-                    <TabsList className="h-8">
-                      <TabsTrigger value="all" className="text-xs px-3 h-7">All</TabsTrigger>
-                      <TabsTrigger value="pending" className="text-xs px-3 h-7">Pending</TabsTrigger>
-                      <TabsTrigger value="in_progress" className="text-xs px-3 h-7">In Progress</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
+              <CardHeader className="pb-3 flex items-center justify-between">
+                <CardTitle className="text-base">Active Complaints</CardTitle>
+                <Tabs value={tab} onValueChange={setTab} className="w-auto">
+                  <TabsList className="h-8">
+                    <TabsTrigger value="all" className="text-xs px-3 h-7">All</TabsTrigger>
+                    <TabsTrigger value="pending" className="text-xs px-3 h-7">Pending</TabsTrigger>
+                    <TabsTrigger value="in_progress" className="text-xs px-3 h-7">In Progress</TabsTrigger>
+                    <TabsTrigger value="escalated" className="text-xs px-3 h-7">Escalated</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </CardHeader>
               <CardContent className="space-y-4">
-                {activeComplaints.map((complaint) => {
+                {filteredComplaints.map((complaint) => {
                   const CategoryIcon = getCategoryIcon(complaint.category);
                   return (
                     <div
                       key={complaint.id}
-                      className="p-4 rounded-xl border border-border hover:border-primary/50 transition-colors"
+                      className="p-4 rounded-xl border border-gray-200 hover:border-primary/50 transition-colors"
                     >
                       <div className="flex items-start gap-4">
-                        <div className={`w-10 h-10 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0`}>
+                        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
                           <CategoryIcon className={`w-5 h-5 ${getCategoryColor(complaint.category)}`} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="font-medium text-sm">{complaint.title}</h4>
-                            <Badge className={getPriorityColor(complaint.priority)} variant="secondary">
-                              {complaint.priority}
+                            <Badge variant="secondary" className={getPriorityColor(complaint.priority)}>
+                              {complaint.priority.charAt(0).toUpperCase() + complaint.priority.slice(1)}
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            {complaint.description}
-                          </p>
+                          <p className="text-xs text-muted-foreground mb-2">{complaint.description}</p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>Assigned: {complaint.assignedTo}</span>
                             <span>•</span>
@@ -289,18 +304,16 @@ export default function ComplaintsPage() {
                           <div className="mt-3">
                             <div className="flex items-center justify-between mb-1">
                               <Badge variant="outline" className={getStatusColor(complaint.status)}>
-                                {complaint.status.replace("_", " ")}
+                                {complaint.status.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                               </Badge>
                               <span className="text-xs text-muted-foreground">{complaint.progress}%</span>
                             </div>
-                            <Progress value={complaint.progress} className="h-1.5" />
+                            <Progress value={complaint.progress} max={100} className="h-1.5" />
                           </div>
                         </div>
                         <div className="flex flex-col gap-2">
                           <Button variant="ghost" size="sm">Track</Button>
-                          <Button variant="ghost" size="sm" className="text-destructive">
-                            Escalate
-                          </Button>
+                          <Button variant="ghost" size="sm" className="text-destructive">Escalate</Button>
                         </div>
                       </div>
                     </div>
@@ -313,18 +326,14 @@ export default function ComplaintsPage() {
             <Card className="shadow-card">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-success" />
-                  Recently Resolved
+                  <CheckCircle2 className="w-4 h-4 text-success" /> Recently Resolved
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {resolvedComplaints.map((complaint) => {
                   const CategoryIcon = getCategoryIcon(complaint.category);
                   return (
-                    <div
-                      key={complaint.id}
-                      className="flex items-center gap-4 p-3 rounded-lg bg-success/5 border border-success/10"
-                    >
+                    <div key={complaint.id} className="flex items-center gap-4 p-3 rounded-lg bg-success/5 border border-success/10">
                       <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
                         <CategoryIcon className={`w-4 h-4 ${getCategoryColor(complaint.category)}`} />
                       </div>
@@ -333,9 +342,7 @@ export default function ComplaintsPage() {
                         <p className="text-xs text-muted-foreground">{complaint.resolution}</p>
                       </div>
                       <div className="text-right">
-                        <Badge variant="outline" className={getStatusColor(complaint.status)}>
-                          Resolved
-                        </Badge>
+                        <Badge variant="outline" className={getStatusColor(complaint.status)}>Resolved</Badge>
                         <p className="text-xs text-muted-foreground mt-1">{complaint.resolvedAt}</p>
                       </div>
                     </div>
@@ -351,20 +358,14 @@ export default function ComplaintsPage() {
             <Card className="shadow-card">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Maintenance Schedule
+                  <Calendar className="w-4 h-4" /> Maintenance Schedule
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {maintenanceSchedule.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50"
-                  >
+                  <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <span className="text-xs font-bold text-primary">
-                        {item.day.slice(0, 3)}
-                      </span>
+                      <span className="text-xs font-bold text-primary">{item.day.slice(0, 3)}</span>
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{item.task}</p>
@@ -374,36 +375,24 @@ export default function ComplaintsPage() {
                 ))}
               </CardContent>
             </Card>
-
-            {/* Quick Tips */}
-            <Card className="shadow-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Quick Tips</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="p-3 rounded-lg bg-info/10 border border-info/20">
-                  <p className="text-sm font-medium text-info">Upload Photos</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Adding photos helps resolve complaints faster
-                  </p>
-                </div>
-                <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
-                  <p className="text-sm font-medium text-warning">Response Time</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Most complaints are resolved within 24-48 hours
-                  </p>
-                </div>
-                <div className="p-3 rounded-lg bg-success/10 border border-success/20">
-                  <p className="text-sm font-medium text-success">Escalation</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Escalate if not resolved within 48 hours
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
+
+      {/* RAISE COMPLAINT MODAL */}
+      {showRaise && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-lg relative">
+            <button
+              className="absolute top-3 right-3 text-gray-500 font-bold"
+              onClick={() => setShowRaise(false)}
+            >
+              ❌
+            </button>
+            <RaiseComplaint />
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

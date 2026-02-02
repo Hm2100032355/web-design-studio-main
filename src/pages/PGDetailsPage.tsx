@@ -1,3 +1,4 @@
+import { allPGs } from "@/data/pgs";
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -119,16 +120,22 @@ const ratingCategories = [
 
 export default function PGDetailsPage() {
   const { id } = useParams();
+
+  const pg = allPGs.find((p) => p.id === id);
+
+  if (!pg) {
+    return <div className="p-6">PG not found</div>;
+  }
+
   const [currentImage, setCurrentImage] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
-
-  const nextImage = () => {
-    setCurrentImage((prev) => (prev + 1) % images.length);
-  };
 
   const prevImage = () => {
     setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
   };
+  const nextImage = () => {
+  setCurrentImage((prev) => (prev + 1) % images.length);
+};
 
   return (
     <DashboardLayout>
@@ -140,7 +147,7 @@ export default function PGDetailsPage() {
               PG Listings
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span className="text-foreground">Shivam Residency</span>
+            <span className="text-foreground">{pg.name}</span>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -236,11 +243,11 @@ export default function PGDetailsPage() {
                       <Badge variant="secondary">Boys & Girls</Badge>
                     </div>
                     <h1 className="font-display text-2xl font-bold text-foreground">
-                      Shivam Residency
+                      {pg.name}
                     </h1>
                     <div className="flex items-center gap-1 mt-2 text-muted-foreground">
                       <MapPin className="w-4 h-4" />
-                      <span>Gachibowli, Hyderabad - Near HITEC City</span>
+                      <span>{pg.location}</span>
                     </div>
                     <div className="flex items-center gap-4 mt-3">
                       <div className="flex items-center gap-1">
@@ -256,7 +263,9 @@ export default function PGDetailsPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Starting from</p>
-                    <p className="text-3xl font-bold text-primary">₹5,500</p>
+                    <p className="text-3xl font-bold text-primary">
+                        ₹{pg.price.toLocaleString()}
+                      </p>
                     <p className="text-sm text-muted-foreground">/month</p>
                   </div>
                 </div>

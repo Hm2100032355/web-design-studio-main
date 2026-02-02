@@ -1,11 +1,10 @@
+import React, { useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  History,
-  Search,
   Calendar,
   CreditCard,
   MessageSquare,
@@ -14,17 +13,25 @@ import {
   Download,
   Filter,
   Clock,
-  MapPin,
   ArrowRight,
+  Search,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 // Import images
 import pgRoom1 from "@/assets/pg-room-1.jpg";
 import pgRoom2 from "@/assets/pg-room-2.jpg";
 import pgRoom3 from "@/assets/pg-room-3.jpg";
 
-const searchHistory = [
+type SearchHistoryItem = {
+  id: string;
+  query: string;
+  filters: string[];
+  date: string;
+  resultsCount: number;
+};
+
+const initialSearchHistory: SearchHistoryItem[] = [
   {
     id: "1",
     query: "PGs near Hitech City",
@@ -153,6 +160,37 @@ const getStatusColor = (status: string) => {
 };
 
 export default function ActivityPage() {
+  const navigate = useNavigate();
+
+  const [searchHistory, setSearchHistory] =
+    useState<SearchHistoryItem[]>(initialSearchHistory);
+
+  // stats (dynamic)
+  const stats = useMemo(() => {
+    return {
+      searches: searchHistory.length,
+      bookings: bookingHistory.length,
+      payments: paymentHistory.length,
+      complaints: complaintHistory.length,
+      reviews: reviewHistory.length,
+    };
+  }, [searchHistory]);
+
+  // Navigate to /search with query params
+  const handleSearchHistoryClick = (item: SearchHistoryItem) => {
+    const params = new URLSearchParams();
+    params.set("q", item.query);
+
+    // pass filters as comma separated string
+    if (item.filters?.length) params.set("filters", item.filters.join(","));
+
+    navigate(`/search?${params.toString()}`);
+  };
+
+  const handleClearSearchHistory = () => {
+    setSearchHistory([]);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
@@ -185,43 +223,47 @@ export default function ActivityPage() {
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
                 <Search className="w-5 h-5 text-primary" />
               </div>
-              <p className="text-2xl font-bold">45</p>
+              <p className="text-2xl font-bold">{stats.searches}</p>
               <p className="text-xs text-muted-foreground">Searches</p>
             </CardContent>
           </Card>
+
           <Card className="shadow-card">
             <CardContent className="p-4 text-center">
               <div className="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center mx-auto mb-2">
                 <Calendar className="w-5 h-5 text-info" />
               </div>
-              <p className="text-2xl font-bold">8</p>
+              <p className="text-2xl font-bold">{stats.bookings}</p>
               <p className="text-xs text-muted-foreground">Bookings</p>
             </CardContent>
           </Card>
+
           <Card className="shadow-card">
             <CardContent className="p-4 text-center">
               <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center mx-auto mb-2">
                 <CreditCard className="w-5 h-5 text-success" />
               </div>
-              <p className="text-2xl font-bold">12</p>
+              <p className="text-2xl font-bold">{stats.payments}</p>
               <p className="text-xs text-muted-foreground">Payments</p>
             </CardContent>
           </Card>
+
           <Card className="shadow-card">
             <CardContent className="p-4 text-center">
               <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center mx-auto mb-2">
                 <MessageSquare className="w-5 h-5 text-warning" />
               </div>
-              <p className="text-2xl font-bold">5</p>
+              <p className="text-2xl font-bold">{stats.complaints}</p>
               <p className="text-xs text-muted-foreground">Complaints</p>
             </CardContent>
           </Card>
+
           <Card className="shadow-card">
             <CardContent className="p-4 text-center">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center mx-auto mb-2">
                 <Star className="w-5 h-5 text-purple-500" />
               </div>
-              <p className="text-2xl font-bold">3</p>
+              <p className="text-2xl font-bold">{stats.reviews}</p>
               <p className="text-xs text-muted-foreground">Reviews</p>
             </CardContent>
           </Card>
@@ -261,39 +303,88 @@ export default function ActivityPage() {
                     <Search className="w-4 h-4" />
                     Recent Searches
                   </CardTitle>
-                  <Button variant="ghost" size="sm" className="text-destructive">
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={handleClearSearchHistory}
+                    disabled={searchHistory.length === 0}
+                  >
                     Clear History
                   </Button>
                 </div>
               </CardHeader>
+
               <CardContent className="space-y-4">
-                {searchHistory.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-primary/50 transition-colors cursor-pointer"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Search className="w-5 h-5 text-primary" />
+                {searchHistory.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <div className="mx-auto w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-3">
+                      <HistoryIcon />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{item.query}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {item.filters.map((filter, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {filter}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">{item.date}</p>
-                      <p className="text-xs text-primary mt-1">{item.resultsCount} results</p>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <ArrowRight className="w-4 h-4" />
+                    <p className="font-medium">No search history</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Your recent searches will appear here.
+                    </p>
+                    <Button className="mt-4" onClick={() => navigate("/search")}>
+                      Go to Search
                     </Button>
                   </div>
-                ))}
+                ) : (
+                  searchHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleSearchHistoryClick(item)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          handleSearchHistoryClick(item);
+                        }
+                      }}
+                      className="group flex items-center gap-4 p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-muted/30 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Search className="w-5 h-5 text-primary" />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {item.query}
+                        </p>
+
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {item.filters.map((filter, index) => (
+                            <Badge
+                              key={index}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {filter}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="text-right hidden sm:block">
+                        <p className="text-xs text-muted-foreground">
+                          {item.date}
+                        </p>
+                        <p className="text-xs text-primary mt-1">
+                          {item.resultsCount} results
+                        </p>
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="group-hover:bg-primary/10"
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -463,7 +554,9 @@ export default function ActivityPage() {
                       <p className="text-sm text-muted-foreground mt-1">{item.review}</p>
                       <p className="text-xs text-muted-foreground mt-2">{item.date}</p>
                     </div>
-                    <Button variant="ghost" size="sm">Edit</Button>
+                    <Button variant="ghost" size="sm">
+                      Edit
+                    </Button>
                   </div>
                 ))}
               </CardContent>
@@ -472,5 +565,40 @@ export default function ActivityPage() {
         </Tabs>
       </div>
     </DashboardLayout>
+  );
+}
+
+/** Simple history icon (lucide History removed in your import list) */
+function HistoryIcon() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      className="text-muted-foreground"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M3 12a9 9 0 1 0 3-6.7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M3 4v4h4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 7v5l3 2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
